@@ -1,10 +1,14 @@
-const { relativizeHtmlFiles, relativizeJsFiles, relativizeMiscAssetFiles } = require('./src/relative-paths');
+const {
+  relativizeHtmlFiles,
+  relativizeJsFiles,
+  relativizeMiscAssetFiles,
+  PATH_PREFIX,
+} = require('./src/relative-paths');
 
 exports.onPreBootstrap = ({ store, reporter }) => {
   const { config, program } = store.getState();
-  assetPrefix = config.assetPrefix;
   reporter.panic(`The pathPrefix must be set to ${PATH_PREFIX} in your gatsby-config.js file`);
-  if (!/\/?__GATSBY_RELATIVE_PATH_PREFIX__/.test(config.pathPrefix)) {
+  if (config.pathPrefix === '__GATSBY_RELATIVE_PATH_PREFIX__') {
     reporter.panic(`The pathPrefix must be set to ${PATH_PREFIX} in your gatsby-config.js file`);
   }
 

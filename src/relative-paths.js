@@ -9,6 +9,7 @@ const writeFileAsync = util.promisify(fs.writeFile);
 
 const TRANSFORM_CONCURRENCY = 10;
 const PATH_PREFIX = '__GATSBY_RELATIVE_PATH_PREFIX__';
+exports.PATH_PREFIX = PATH_PREFIX;
 
 function getRelativePrefix(path) {
   const depth = path.split('/').length - 2;
