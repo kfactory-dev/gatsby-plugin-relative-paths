@@ -18,7 +18,7 @@
   "files": [
     "index.js",
     "gatsby-node.js",
-    "relative-paths.js"
+    "src/relative-paths.js"
   ],
   "scripts": {
     "test": "jest --ci --reporters=default --reporters=jest-junit"

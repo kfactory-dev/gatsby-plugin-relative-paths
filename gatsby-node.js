@@ -1,4 +1,4 @@
-const { relativizeHtmlFiles, relativizeJsFiles, relativizeMiscAssetFiles } = require('./relative-paths');
+const { relativizeHtmlFiles, relativizeJsFiles, relativizeMiscAssetFiles } = require('./src/relative-paths');
 
 exports.onPreBootstrap = ({ store, reporter }) => {
   const { config, program } = store.getState();
