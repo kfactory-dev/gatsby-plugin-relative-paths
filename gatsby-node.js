@@ -7,8 +7,7 @@ const {
 
 exports.onPreBootstrap = ({ store, reporter }) => {
   const { config, program } = store.getState();
-  reporter.panic(`The pathPrefix must be set to ${PATH_PREFIX} in your gatsby-config.js file`);
-  if (config.pathPrefix !== '__GATSBY_RELATIVE_PATH_PREFIX__') {
+  if (`/${PATH_PREFIX}` !== config.pathPrefix) {
     reporter.panic(`The pathPrefix must be set to ${PATH_PREFIX} in your gatsby-config.js file`);
   }
 
