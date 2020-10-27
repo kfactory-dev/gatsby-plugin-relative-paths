@@ -28,6 +28,7 @@ async function moveAllAssets(assetPrefix) {
       });
     });
     fs.moveSync(`public/static`, `public/${assetPrefix}/static`, { overwrite: true });
+    fs.moveSync(`public/page-data`, `public/${assetPrefix}/page-data`, { overwrite: true });
     resolve(true);
   });
 }
