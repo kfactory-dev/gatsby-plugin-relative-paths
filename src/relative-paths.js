@@ -1,7 +1,8 @@
-const fs = require('fs');
+const fs = require('fs-extra');
 const util = require('util');
 const pMap = require('p-map');
 const globby = require('globby');
+const glob = require('glob');
 const isTextPath = require('is-text-path');
 
 const readFileAsync = util.promisify(fs.readFile);
@@ -16,6 +17,21 @@ function getRelativePrefix(path) {
   return depth > 0 ? '../'.repeat(depth) : './';
 }
 exports.getRelativePrefix = getRelativePrefix;
+
+async function moveAllAssets(assetPrefix) {
+  return new Promise((resolve, reject) => {
+    glob('public/*.{js,css,js.map}', {}, (err, files) => {
+      if (err) return reject(err);
+
+      files.forEach((file) => {
+        fs.moveSync(file, file.replace('public', `public/${assetPrefix}`), { overwrite: true });
+      });
+    });
+    fs.moveSync(`public/static`, `public/${assetPrefix}/static`, { overwrite: true });
+    resolve(true);
+  });
+}
+exports.moveAllAssets = moveAllAssets;
 
 /**
 Replaces all /__GATSBY_RELATIVE_PATH_PREFIX__/ strings with the correct relative paths

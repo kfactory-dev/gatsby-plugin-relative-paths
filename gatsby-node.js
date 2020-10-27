@@ -2,6 +2,7 @@ const {
   relativizeHtmlFiles,
   relativizeJsFiles,
   relativizeMiscAssetFiles,
+  moveAllAssets,
   PATH_PREFIX,
 } = require('./src/relative-paths');
 
@@ -18,6 +19,9 @@ exports.onPreBootstrap = ({ store, reporter }) => {
 
 exports.onPostBuild = async ({ store }) => {
   const { config } = store.getState();
+  if (config.assetPrefix) {
+    await moveAllAssets(config.assetPrefix);
+  }
   await relativizeHtmlFiles(config.assetPrefix);
   await relativizeJsFiles();
   await relativizeMiscAssetFiles();
