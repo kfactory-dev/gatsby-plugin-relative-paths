@@ -1,15 +1,12 @@
-const {
-  relativizeHtmlFiles,
-  relativizeJsFiles,
-  relativizeMiscAssetFiles,
-  moveAllAssets,
-  PATH_PREFIX,
-} = require('./src/relative-paths');
+const { relativizeFiles } = require('./src/relative-paths');
+const { moveAllAssets } = require('./src/core');
+
+const assetPrefix = '__GATSBY_RELATIVE_PATH__';
 
 exports.onPreBootstrap = ({ store, reporter }) => {
   const { config, program } = store.getState();
-  if (`/${PATH_PREFIX}` !== config.pathPrefix) {
-    reporter.panic(`The pathPrefix must be set to ${PATH_PREFIX} in your gatsby-config.js file`);
+  if (assetPrefix !== config.assetPrefix) {
+    reporter.panic(`The assetPrefix must be set to ${assetPrefix} in your gatsby-config.js file`);
   }
 
   if (program._[0] === 'build' && !program.prefixPaths) {
@@ -17,12 +14,9 @@ exports.onPreBootstrap = ({ store, reporter }) => {
   }
 };
 
-exports.onPostBuild = async ({ store }) => {
-  const { config } = store.getState();
-  if (config.assetPrefix) {
-    await moveAllAssets(config.assetPrefix);
-  }
-  await relativizeHtmlFiles(config.assetPrefix);
-  await relativizeJsFiles();
-  await relativizeMiscAssetFiles();
+exports.onPostBuild = async (_, { assetFolder = 'public' }) => {
+  assetFolder = `${assetFolder}/assets`;
+
+  await moveAllAssets({ assetFolder });
+  await relativizeFiles({ assetPrefix, assetFolder });
 };

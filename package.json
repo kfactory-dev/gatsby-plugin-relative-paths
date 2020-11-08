@@ -28,6 +28,7 @@
     "glob": "^7.1.6",
     "globby": "^8.0.1",
     "is-text-path": "^1.0.1",
+    "klaw-sync": "^6.0.0",
     "p-map": "^2.0.0"
   },
   "peerDependencies": {
