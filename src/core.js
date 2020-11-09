@@ -61,7 +61,7 @@ async function copyAllAssets(path, { assetFolder }) {
   return true;
 }
 
-async function syncAllLinks({ htmlGlob = 'public/**/*.html', assetFolder } = {}) {
+async function syncAllLinks({ htmlGlob = 'public/**/*.html', assetFolder = 'public' } = {}) {
   const paths = await globby([htmlGlob]);
   assetFolder = `${assetFolder}/assets`;
 
