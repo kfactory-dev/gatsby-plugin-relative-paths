@@ -42,21 +42,33 @@ async function moveAllAssets({ assetFolder }) {
   return true;
 }
 
-function copyAllAssets(path, { assetFolder }) {
+async function copyAllAssets(path, { assetFolder }) {
   let dest = path.replace(/\/(index|404|500).html/g, '');
   dest = `${dest}/assets`;
 
+  if (dest == assetFolder) return;
+
   klawSync(assetFolder, { nofile: true }).forEach(({ path }) => {
-    const newPath = path.replace(assetFolder, dest);
-    fs.mkdirSync(newPath, { recursive: true });
+    const destinationPath = path.replace(assetFolder, dest);
+    fs.ensureDir(destinationPath, { recursive: true });
   });
 
   klawSync(assetFolder, { nodir: true }).forEach(({ path }) => {
-    const newPath = path.replace(assetFolder, dest);
-    fs.ensureSymlink(path, newPath);
+    const destinationPath = path.replace(assetFolder, dest);
+    fs.ensureSymlinkSync(path, destinationPath);
   });
 
   return true;
 }
 
-module.exports = { editFiles, moveAllAssets, copyAllAssets };
+async function syncAllLinks({ htmlGlob = 'public/**/*.html', assetFolder }) {
+  const paths = await globby([htmlGlob]);
+  assetFolder = `${assetFolder}/assets`;
+
+  return paths.map(async (htmlPath) => {
+    console.log(htmlPath);
+    copyAllAssets(htmlPath, { assetFolder });
+  });
+}
+
+module.exports = { editFiles, moveAllAssets, copyAllAssets, syncAllLinks };
