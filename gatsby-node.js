@@ -14,9 +14,9 @@ exports.onPreBootstrap = ({ store, reporter }) => {
   }
 };
 
-exports.onPostBuild = async (_, { assetFolder = 'public' }) => {
+exports.onPostBuild = async (_, { assetFolder = 'public', verbose = false }) => {
   assetFolder = `${assetFolder}/assets`;
 
-  await moveAllAssets({ assetFolder });
-  await relativizeFiles({ assetPrefix, assetFolder });
+  await moveAllAssets({ assetFolder, verbose });
+  await relativizeFiles({ assetPrefix, assetFolder, verbose });
 };

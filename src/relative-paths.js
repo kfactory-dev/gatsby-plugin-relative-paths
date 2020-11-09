@@ -2,8 +2,9 @@ const isTextPath = require('is-text-path');
 const { editFiles, copyAllAssets } = require('./core');
 
 class RelativizeContent {
-  constructor({ assetPrefix }) {
+  constructor({ assetPrefix, verbose = false }) {
     this.assetPrefix = assetPrefix;
+    this.verbose = verbose;
   }
 
   inHtmlFiles({ path, contents }) {
@@ -11,7 +12,7 @@ class RelativizeContent {
 
     const string = `./assets`;
     contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), string);
-    console.log('[relative-paths][HTML]', path, `${this.assetPrefix} => ${string}`);
+    this.verbose && console.log('[relative-paths][HTML]', path, `${this.assetPrefix} => ${string}`);
 
     return contents;
   }
@@ -21,7 +22,7 @@ class RelativizeContent {
 
     const string = `./assets`;
     contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), string);
-    console.log('[relative-paths][_JS_]', path, `${this.assetPrefix} => ${string}`);
+    this.verbose && console.log('[relative-paths][_JS_]', path, `${this.assetPrefix} => ${string}`);
     return contents;
   }
 
@@ -30,13 +31,13 @@ class RelativizeContent {
     if (!isTextPath(path)) return contents;
     if (!contents.includes(this.assetPrefix)) return contents;
     contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), `./assets`);
-    console.log('[relative-paths][MISC]', path, `${this.assetPrefix} => ./assets`);
+    this.verbose && console.log('[relative-paths][MISC]', path, `${this.assetPrefix} => ./assets`);
     return contents;
   }
 }
 
-async function relativizeFiles({ assetPrefix, assetFolder = 'public/assets' }) {
-  const relativize = new RelativizeContent({ assetPrefix, assetFolder });
+async function relativizeFiles({ assetPrefix, assetFolder = 'public/assets', verbose }) {
+  const relativize = new RelativizeContent({ assetPrefix, assetFolder, verbose });
 
   await editFiles(['public/**/*.html'], ({ path, contents }) => {
     copyAllAssets(path, { assetFolder });
