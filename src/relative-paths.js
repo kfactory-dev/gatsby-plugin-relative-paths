@@ -7,7 +7,7 @@ class RelativizeContent {
   }
 
   inHtmlFiles({ path, contents }) {
-    if (!contents.includes(`/${this.assetPrefix}`)) return;
+    if (!contents.includes(`/${this.assetPrefix}`)) return contents;
 
     const string = `./assets`;
     contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), string);
@@ -17,7 +17,7 @@ class RelativizeContent {
   }
 
   inJsFiles({ path, contents }) {
-    if (!contents.includes(this.assetPrefix)) return;
+    if (!contents.includes(this.assetPrefix)) return contents;
 
     const string = `./assets`;
     contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), string);
@@ -27,8 +27,8 @@ class RelativizeContent {
 
   inMiscAssetFiles({ path, contents }) {
     // Skip if is a binary file
-    if (!isTextPath(path)) return;
-    if (!contents.includes(this.assetPrefix)) return;
+    if (!isTextPath(path)) return contents;
+    if (!contents.includes(this.assetPrefix)) return contents;
     contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), `./assets`);
     console.log('[relative-paths][MISC]', path, `${this.assetPrefix} => ./assets`);
     return contents;

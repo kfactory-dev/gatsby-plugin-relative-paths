@@ -81,7 +81,7 @@ to
 JS files
 
 ```javascript
-return __GATSBY_RELATIVE_PATH__ + '/page-data/app-data.json';
+return '__GATSBY_RELATIVE_PATH__' + '/page-data/app-data.json';
 ```
 
 ```javascript
