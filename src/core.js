@@ -55,7 +55,12 @@ async function copyAllAssets(path, { assetFolder }) {
 
   klawSync(assetFolder, { nodir: true }).forEach(({ path }) => {
     const destinationPath = path.replace(assetFolder, dest);
-    fs.ensureSymlinkSync(path, destinationPath);
+    try {
+      fs.ensureSymlinkSync(path, destinationPath);
+    } catch (e) {
+      fs.unlinkSync(destinationPath);
+      fs.ensureSymlinkSync(path, destinationPath);
+    }
   });
 
   return true;
