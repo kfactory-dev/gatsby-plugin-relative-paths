@@ -32,6 +32,22 @@ module.exports = {
 },
 ```
 
+### Options
+
+```js
+module.exports = {
+  plugins: [
+    {
+      resolve: 'gatsby-plugin-relative-paths',
+      options: {
+        assetFolder: 'public/blog', // store real assets in this folder
+        verbose: true,
+      },
+    },
+  ],
+};
+```
+
 ## What is a relative path?
 
 Relative paths use the current url to calculate the location of the resource.
