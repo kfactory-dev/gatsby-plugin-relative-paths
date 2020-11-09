@@ -1,7 +1,7 @@
 {
   "name": "gatsby-plugin-relative-paths",
   "description": "Ensuring that assets are relative and links",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "keywords": [
     "gatsby",
     "gatsby-plugin",
