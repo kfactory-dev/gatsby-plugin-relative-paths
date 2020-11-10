@@ -1,7 +1,7 @@
 {
   "name": "gatsby-plugin-relative-paths",
   "description": "Ensuring that assets are relative and links",
-  "version": "0.2.1",
+  "version": "1.0.0-rc.2",
   "keywords": [
     "gatsby",
     "gatsby-plugin",
@@ -14,11 +14,12 @@
     "type": "git",
     "url": "git@github.com:MiguelSavignano/gatsby-plugin-relative-paths.git"
   },
+  "main": "index.js",
   "license": "MIT",
   "files": [
     "index.js",
     "gatsby-node.js",
-    "src/relative-paths.js"
+    "src"
   ],
   "scripts": {
     "test": "jest --ci --reporters=default --reporters=jest-junit"
@@ -28,6 +29,7 @@
     "glob": "^7.1.6",
     "globby": "^8.0.1",
     "is-text-path": "^1.0.1",
+    "klaw-sync": "^6.0.0",
     "p-map": "^2.0.0"
   },
   "peerDependencies": {

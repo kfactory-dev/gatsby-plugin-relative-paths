@@ -1,118 +1,58 @@
-const fs = require('fs-extra');
-const util = require('util');
-const pMap = require('p-map');
-const globby = require('globby');
-const glob = require('glob');
 const isTextPath = require('is-text-path');
+const { editFiles, copyAllAssets } = require('./core');
 
-const readFileAsync = util.promisify(fs.readFile);
-const writeFileAsync = util.promisify(fs.writeFile);
+class RelativizeContent {
+  constructor({ assetPrefix, verbose = false }) {
+    this.assetPrefix = assetPrefix;
+    this.verbose = verbose;
+  }
 
-const TRANSFORM_CONCURRENCY = 10;
-const PATH_PREFIX = '__GATSBY_RELATIVE_PATH_PREFIX__';
-exports.PATH_PREFIX = PATH_PREFIX;
+  inHtmlFiles({ path, contents }) {
+    if (!contents.includes(`/${this.assetPrefix}`)) return contents;
 
-function getRelativePrefix(path) {
-  const depth = path.split('/').length - 2;
-  return depth > 0 ? '../'.repeat(depth) : './';
+    const string = `./assets`;
+    contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), string);
+    this.verbose && console.log('[relative-paths][HTML]', path, `${this.assetPrefix} => ${string}`);
+
+    return contents;
+  }
+
+  inJsFiles({ path, contents }) {
+    if (!contents.includes(this.assetPrefix)) return contents;
+
+    const string = `./assets`;
+    contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), string);
+    this.verbose && console.log('[relative-paths][_JS_]', path, `${this.assetPrefix} => ${string}`);
+    return contents;
+  }
+
+  inMiscAssetFiles({ path, contents }) {
+    // Skip if is a binary file
+    if (!isTextPath(path)) return contents;
+    if (!contents.includes(this.assetPrefix)) return contents;
+    contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), `./assets`);
+    this.verbose && console.log('[relative-paths][MISC]', path, `${this.assetPrefix} => ./assets`);
+    return contents;
+  }
 }
-exports.getRelativePrefix = getRelativePrefix;
 
-async function moveAllAssets(assetPrefix) {
-  return new Promise((resolve, reject) => {
-    glob('public/*.{js,css,js.map}', {}, (err, files) => {
-      if (err) return reject(err);
+async function relativizeFiles({ assetPrefix, assetFolder = 'public/assets', verbose }) {
+  const relativize = new RelativizeContent({ assetPrefix, assetFolder, verbose });
 
-      files.forEach((file) => {
-        fs.moveSync(file, file.replace('public', `public/${assetPrefix}`), { overwrite: true });
-      });
-    });
-    fs.moveSync(`public/static`, `public/${assetPrefix}/static`, { overwrite: true });
-    fs.moveSync(`public/page-data`, `public/${assetPrefix}/page-data`, { overwrite: true });
-    resolve(true);
+  await editFiles(['public/**/*.html'], ({ path, contents }) => {
+    copyAllAssets(path, { assetFolder });
+    return relativize.inHtmlFiles({ path, contents });
   });
+
+  await editFiles(['public/**/*.{js,js.map}'], ({ path, contents }) => {
+    return relativize.inJsFiles({ contents, path });
+  });
+
+  await editFiles(['public/**/*', '!public/**/*.html', '!public/**/*.{js,js.map}'], ({ path, contents }) => {
+    return relativize.inMiscAssetFiles({ contents, path });
+  });
+
+  return true;
 }
-exports.moveAllAssets = moveAllAssets;
 
-/**
-Replaces all /__GATSBY_RELATIVE_PATH_PREFIX__/ strings with the correct relative paths
-based on the depth of the file within the `public/` folder
-*/
-async function relativizeHtmlFiles(assetPrefix) {
-  const paths = await globby(['public/**/*.html']);
-
-  await pMap(
-    paths,
-    async (path) => {
-      let contents = await readFileAsync(path, 'utf-8');
-      if (!contents.includes(PATH_PREFIX)) return;
-
-      const relativePrefix = getRelativePrefix(path);
-
-      contents = contents.replace(
-        new RegExp(`/${assetPrefix}/${PATH_PREFIX}/`, 'g'),
-        `${relativePrefix}${assetPrefix}/`
-      );
-      contents = contents.replace(new RegExp(`/${PATH_PREFIX}/`, 'g'), `${relativePrefix}`);
-
-      await writeFileAsync(path, contents);
-    },
-    { concurrency: TRANSFORM_CONCURRENCY }
-  );
-}
-exports.relativizeHtmlFiles = relativizeHtmlFiles;
-
-/**
-Replaces all "/__GATSBY_RELATIVE_PATH_PREFIX__" strings __GATSBY_RELATIVE_PATH_PREFIX__
-Replaces all "/__GATSBY_RELATIVE_PATH_PREFIX__/" strings with __GATSBY_RELATIVE_PATH_PREFIX__ + "/"
-Replaces all "/__GATSBY_RELATIVE_PATH_PREFIX__/xxxx" strings with __GATSBY_RELATIVE_PATH_PREFIX__ + "/xxxx"
-Also ensures that `__GATSBY_RELATIVE_PATH_PREFIX__` is defined in case this JS file is outside the document context, e.g.: in a worker
-*/
-async function relativizeJsFiles() {
-  const paths = await globby(['public/**/*.js']);
-
-  await pMap(
-    paths,
-    async (path) => {
-      let contents = await readFileAsync(path, 'utf-8');
-      if (!contents.includes(PATH_PREFIX)) return;
-
-      contents = contents
-        .replace(/["']\/__GATSBY_RELATIVE_PATH_PREFIX__['"]/g, () => ' __GATSBY_RELATIVE_PATH_PREFIX__ ')
-        .replace(
-          /(["'])\/__GATSBY_RELATIVE_PATH_PREFIX__\/([^'"]*?)(['"])/g,
-          (matches, g1, g2, g3) => ` ${PATH_PREFIX} + ${g1}/${g2}${g3}`
-        );
-
-      contents = `if(typeof ${PATH_PREFIX} === 'undefined'){${PATH_PREFIX}=''}${contents}`;
-
-      await writeFileAsync(path, contents);
-    },
-    { concurrency: TRANSFORM_CONCURRENCY }
-  );
-}
-exports.relativizeJsFiles = relativizeJsFiles;
-
-/**
-Replaces all /__GATSBY_RELATIVE_PATH_PREFIX__/ strings to standard relative paths
-*/
-async function relativizeMiscAssetFiles() {
-  const paths = await globby(['public/**/*', '!public/**/*.html', '!public/**/*.js']);
-
-  await pMap(
-    paths,
-    async (path) => {
-      // Skip if is a binary file
-      if (!isTextPath(path)) return;
-
-      let contents = await readFileAsync(path, 'utf-8');
-      if (!contents.includes(PATH_PREFIX)) return;
-
-      contents = contents.replace(new RegExp(`/${PATH_PREFIX}/`, 'g'), getRelativePrefix(path));
-
-      await writeFileAsync(path, contents);
-    },
-    { concurrency: TRANSFORM_CONCURRENCY }
-  );
-}
-exports.relativizeMiscAssetFiles = relativizeMiscAssetFiles;
+module.exports = { relativizeFiles, RelativizeContent };
