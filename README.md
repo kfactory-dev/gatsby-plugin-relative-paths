@@ -48,6 +48,21 @@ module.exports = {
 };
 ```
 
+### Recover broken symlink
+
+If the absolute path where the assets will be generated is different from where it will be served; it is necessary to regenerate the symliks with the new absolute paths.
+
+```js
+// ./sync-symlinks.js
+const { syncAllLinks } = require('gatsby-plugin-relative-paths');
+syncAllLinks({ assetFolder: 'public' });
+```
+
+```
+node ./sync-symlinks.js
+// start the webserver
+```
+
 ## What is a relative path?
 
 Relative paths use the current url to calculate the location of the resource.
