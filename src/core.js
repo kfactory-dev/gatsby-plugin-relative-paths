@@ -31,12 +31,12 @@ async function editFiles(expresion, callback) {
 async function moveAllAssets({ assetFolder }) {
   const files = await globby('public/*.{js,css,js.map,webmanifest,xml,txt}');
   files.forEach((file) => {
-    fs.moveSync(file, file.replace('public', `${assetFolder}`), {
+    fs.copySync(file, file.replace('public', `${assetFolder}`), {
       overwrite: true,
     });
   });
-  fs.moveSync(`public/static`, `${assetFolder}/static`, { overwrite: true });
-  fs.moveSync(`public/page-data`, `${assetFolder}/page-data`, {
+  fs.copySync(`public/static`, `${assetFolder}/static`, { overwrite: true });
+  fs.copySync(`public/page-data`, `${assetFolder}/page-data`, {
     overwrite: true,
   });
   return true;
