@@ -1,4 +1,3 @@
-const isTextPath = require('is-text-path');
 const { editFiles, copyAllAssets } = require('./core');
 
 class RelativizeContent {
@@ -27,8 +26,6 @@ class RelativizeContent {
   }
 
   inMiscAssetFiles({ path, contents }) {
-    // Skip if is a binary file
-    if (!isTextPath(path)) return contents;
     if (!contents.includes(this.assetPrefix)) return contents;
     contents = contents.replace(new RegExp(`(/${this.assetPrefix}|${this.assetPrefix})`, 'g'), `./assets`);
     this.verbose && console.log('[relative-paths][MISC]', path, `${this.assetPrefix} => ./assets`);

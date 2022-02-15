@@ -3,6 +3,7 @@ const util = require('util');
 const pMap = require('p-map');
 const globby = require('globby');
 const klawSync = require('klaw-sync');
+const isTextPath = require('is-text-path');
 
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
@@ -14,7 +15,7 @@ async function editFiles(expresion, callback) {
   const paths = await globby(expresion);
 
   return pMap(
-    paths,
+    paths.filter(isTextPath),
     async (path) => {
       let contents = await readFileAsync(path, 'utf-8');
       const result = await callback({ path, contents });
