@@ -1,4 +1,4 @@
-const { editFiles, copyAllAssets } = require('./core');
+const { editTextFiles, copyAllAssets } = require('./core');
 
 class RelativizeContent {
   constructor({ assetPrefix, verbose = false }) {
@@ -36,16 +36,16 @@ class RelativizeContent {
 async function relativizeFiles({ assetPrefix, assetFolder = 'public/assets', verbose }) {
   const relativize = new RelativizeContent({ assetPrefix, assetFolder, verbose });
 
-  await editFiles(['public/**/*.html'], ({ path, contents }) => {
+  await editTextFiles(['public/**/*.html'], ({ path, contents }) => {
     copyAllAssets(path, { assetFolder });
     return relativize.inHtmlFiles({ path, contents });
   });
 
-  await editFiles(['public/**/*.{js,js.map}'], ({ path, contents }) => {
+  await editTextFiles(['public/**/*.{js,js.map}'], ({ path, contents }) => {
     return relativize.inJsFiles({ contents, path });
   });
 
-  await editFiles(['public/**/*', '!public/**/*.html', '!public/**/*.{js,js.map}'], ({ path, contents }) => {
+  await editTextFiles(['public/**/*', '!public/**/*.html', '!public/**/*.{js,js.map}'], ({ path, contents }) => {
     return relativize.inMiscAssetFiles({ contents, path });
   });
 

@@ -11,7 +11,7 @@ const writeFileAsync = util.promisify(fs.writeFile);
 // linkSync files does't work with concurrency
 const TRANSFORM_CONCURRENCY = 1;
 
-async function editFiles(expresion, callback) {
+async function editTextFiles(expresion, callback) {
   const paths = await globby(expresion);
 
   return pMap(
@@ -77,4 +77,4 @@ async function syncAllLinks({ htmlGlob = 'public/**/*.html', assetFolder = 'publ
   });
 }
 
-module.exports = { editFiles, moveAllAssets, copyAllAssets, syncAllLinks };
+module.exports = { editTextFiles, moveAllAssets, copyAllAssets, syncAllLinks };
