@@ -8,26 +8,16 @@ const isTextPath = require('is-text-path');
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
 
-// linkSync files does't work with concurrency
-const TRANSFORM_CONCURRENCY = 1;
-
 async function editTextFiles(cwd, expresion, callback) {
   const paths = await globby(expresion, { cwd });
 
-  return pMap(
-    paths.filter(isTextPath),
-    async (relpath) => {
-      const srcpath = path.join(cwd, relpath);
-      let contents = await readFileAsync(srcpath, 'utf-8');
-      const result = await callback({ path: srcpath, contents });
-      if (result) {
-        contents = result;
-      }
+  return pMap(paths.filter(isTextPath), async (relpath) => {
+    const srcpath = path.join(cwd, relpath);
+    const contents = await readFileAsync(srcpath, 'utf-8');
+    const result = await callback({ path: srcpath, contents });
 
-      await writeFileAsync(srcpath, contents);
-    },
-    { concurrency: TRANSFORM_CONCURRENCY }
-  );
+    await writeFileAsync(srcpath, result);
+  });
 }
 
 async function moveAllAssets(publicPath, assetPath, reporter) {
@@ -36,6 +26,7 @@ async function moveAllAssets(publicPath, assetPath, reporter) {
   ['static', 'page-data', ...files].forEach((file) => {
     const srcpath = path.join(publicPath, file);
     const dest = path.join(assetPath, file);
+
     reporter.verbose(`[relative-paths] rename ${srcpath} ${dest}`);
     fs.moveSync(srcpath, dest, { overwrite: true });
   });
@@ -49,6 +40,7 @@ async function copyAllAssets(publicPath, assetPath, reporter) {
   ['static', 'page-data', ...files].forEach((file) => {
     const srcpath = path.join(publicPath, file);
     const dest = path.join(assetPath, file);
+
     reporter.verbose(`[relative-paths] copy ${srcpath} ${dest}`);
     fs.copySync(srcpath, dest, { overwrite: true });
   });
@@ -58,6 +50,7 @@ async function copyAllAssets(publicPath, assetPath, reporter) {
 
 async function relativizeAssets(assetPath, assetPrefix, assetFolder, reporter) {
   const prefixPattern = new RegExp(`(/${assetPrefix}|${assetPrefix})`, 'g');
+
   await editTextFiles(assetPath, ['**/*.{js,js.map}'], ({ path: srcpath, contents }) => {
     reporter.verbose(`[relative-paths][_JS_] replace ${srcpath} ${assetPrefix} ${assetFolder}`);
     return contents.replace(prefixPattern, assetFolder);
@@ -75,6 +68,7 @@ async function relativizeAssets(assetPath, assetPrefix, assetFolder, reporter) {
 
 async function relativizeFiles(publicPath, assetPrefix, assetFolder, reporter) {
   const prefixPattern = new RegExp(`(/${assetPrefix}|${assetPrefix})`, 'g');
+
   const publicAssetPath = path.join(publicPath, assetFolder);
   await moveAllAssets(publicPath, publicAssetPath, reporter);
 
@@ -85,6 +79,7 @@ async function relativizeFiles(publicPath, assetPrefix, assetFolder, reporter) {
 
   await editTextFiles(publicPath, ['*/**/*.html'], async ({ path: srcpath, contents }) => {
     const pageAssetPath = path.join(path.dirname(srcpath), assetFolder);
+
     await copyAllAssets(publicAssetPath, pageAssetPath, reporter);
     await relativizeAssets(pageAssetPath, assetPrefix, assetFolder, reporter);
 
