@@ -14,12 +14,12 @@ exports.onPreBootstrap = ({ store, reporter }) => {
   }
 };
 
-exports.onCreatePage = ({ page, actions }) => {
+exports.onCreatePage = ({ page, actions, reporter }) => {
   const matchPath = `/ipfs/:ipfs_cid${page.matchPath ?? page.path}`;
-  console.log(`[relative-paths] match ${page.path} => ${matchPath}`);
+  reporter.verbose(`[relative-paths] match ${page.path} ${matchPath}`);
   actions.createPage({ ...page, matchPath });
 };
 
-exports.onPostBuild = async (_, { verbose = false }) => {
-  return relativizeFiles('public', assetPrefix, assetFolder, verbose);
+exports.onPostBuild = async ({ reporter }) => {
+  return relativizeFiles('public', assetPrefix, assetFolder, reporter);
 };
