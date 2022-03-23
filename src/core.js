@@ -1,8 +1,8 @@
 const fs = require('fs-extra');
+const path = require('path');
 const util = require('util');
 const pMap = require('p-map');
 const globby = require('globby');
-const klawSync = require('klaw-sync');
 const isTextPath = require('is-text-path');
 
 const readFileAsync = util.promisify(fs.readFile);
@@ -11,70 +11,88 @@ const writeFileAsync = util.promisify(fs.writeFile);
 // linkSync files does't work with concurrency
 const TRANSFORM_CONCURRENCY = 1;
 
-async function editFiles(expresion, callback) {
-  const paths = await globby(expresion);
+async function editTextFiles(cwd, expresion, callback) {
+  const paths = await globby(expresion, { cwd });
 
   return pMap(
     paths.filter(isTextPath),
-    async (path) => {
-      let contents = await readFileAsync(path, 'utf-8');
-      const result = await callback({ path, contents });
+    async (relpath) => {
+      const srcpath = path.join(cwd, relpath);
+      let contents = await readFileAsync(srcpath, 'utf-8');
+      const result = await callback({ path: srcpath, contents });
       if (result) {
         contents = result;
       }
 
-      await writeFileAsync(path, contents);
+      await writeFileAsync(srcpath, contents);
     },
     { concurrency: TRANSFORM_CONCURRENCY }
   );
 }
 
-async function moveAllAssets({ assetFolder }) {
-  const files = await globby('public/*.{js,css,js.map,webmanifest,xml,txt}');
-  files.forEach((file) => {
-    fs.copySync(file, file.replace('public', `${assetFolder}`), {
-      overwrite: true,
-    });
-  });
-  fs.copySync(`public/static`, `${assetFolder}/static`, { overwrite: true });
-  fs.copySync(`public/page-data`, `${assetFolder}/page-data`, {
-    overwrite: true,
-  });
-  return true;
-}
+async function moveAllAssets(publicPath, assetPath, verbose) {
+  const files = await globby('*.{js,css,js.map,webmanifest,xml,txt}', { cwd: publicPath });
 
-async function copyAllAssets(path, { assetFolder }) {
-  let dest = path.replace(/\/(index|404|500).html/g, '');
-  dest = `${dest}/assets`;
-
-  if (dest == assetFolder) return;
-
-  klawSync(assetFolder, { nofile: true }).forEach(({ path }) => {
-    const destinationPath = path.replace(assetFolder, dest);
-    fs.ensureDir(destinationPath, { recursive: true });
-  });
-
-  klawSync(assetFolder, { nodir: true }).forEach(({ path }) => {
-    const destinationPath = path.replace(assetFolder, dest);
-    try {
-      fs.ensureSymlinkSync(path, destinationPath);
-    } catch (e) {
-      fs.unlinkSync(destinationPath);
-      fs.ensureSymlinkSync(path, destinationPath);
-    }
+  ['static', 'page-data', ...files].forEach((file) => {
+    const srcpath = path.join(publicPath, file);
+    const dest = path.join(assetPath, file);
+    verbose && console.log('[relative-paths]', `rename ${srcpath} to ${dest}`);
+    fs.moveSync(srcpath, dest, { overwrite: true });
   });
 
   return true;
 }
 
-async function syncAllLinks({ htmlGlob = 'public/**/*.html', assetFolder = 'public' } = {}) {
-  const paths = await globby([htmlGlob]);
-  assetFolder = `${assetFolder}/assets`;
+async function copyAllAssets(publicPath, assetPath, verbose) {
+  const files = await globby('*.{js,css,js.map,webmanifest,xml,txt}', { cwd: publicPath });
 
-  return paths.map(async (htmlPath) => {
-    console.log(htmlPath);
-    copyAllAssets(htmlPath, { assetFolder });
+  ['static', 'page-data', ...files].forEach((file) => {
+    const srcpath = path.join(publicPath, file);
+    const dest = path.join(assetPath, file);
+    verbose && console.log('[relative-paths]', `copy ${srcpath} to ${dest}`);
+    fs.copySync(srcpath, dest, { overwrite: true });
   });
+
+  return true;
 }
 
-module.exports = { editFiles, moveAllAssets, copyAllAssets, syncAllLinks };
+async function relativizeAssets(assetPath, assetPrefix, assetFolder, verbose) {
+  const prefixPattern = new RegExp(`(/${assetPrefix}|${assetPrefix})`, 'g');
+  await editTextFiles(assetPath, ['**/*.{js,js.map}'], ({ path: srcpath, contents }) => {
+    verbose && console.log('[relative-paths][_JS_]', srcpath, `${assetPrefix} => ${assetFolder}`);
+    return contents.replace(prefixPattern, assetFolder);
+  });
+
+  await editTextFiles(assetPath, ['**/*', '!**/*.{js,js.map}'], ({ path: src, contents }) => {
+    const relativePath = path.relative(src, assetPath);
+
+    verbose && console.log('[relative-paths][MISC]', src, `${assetPrefix} => ${relativePath}`);
+    return contents.replace(prefixPattern, relativePath);
+  });
+
+  return true;
+}
+
+async function relativizeFiles(publicPath, assetPrefix, assetFolder, verbose) {
+  const prefixPattern = new RegExp(`(/${assetPrefix}|${assetPrefix})`, 'g');
+  const publicAssetPath = path.join(publicPath, assetFolder);
+  await moveAllAssets(publicPath, publicAssetPath, verbose);
+
+  await editTextFiles(publicPath, ['*.html'], ({ path, contents }) => {
+    verbose && console.log('[relative-paths][HTML]', path, `${assetPrefix} => ${assetFolder}`);
+    return contents.replaceAll(prefixPattern, assetFolder);
+  });
+
+  await editTextFiles(publicPath, ['*/**/*.html'], async ({ path: srcpath, contents }) => {
+    const pageAssetPath = path.join(path.dirname(srcpath), assetFolder);
+    await copyAllAssets(publicAssetPath, pageAssetPath, verbose);
+    await relativizeAssets(pageAssetPath, assetPrefix, assetFolder, verbose);
+
+    verbose && console.log('[relative-paths][HTML]', srcpath, `${assetPrefix} => ${assetFolder}`);
+    return contents.replaceAll(prefixPattern, assetFolder);
+  });
+
+  return true;
+}
+
+module.exports = { editTextFiles, moveAllAssets, copyAllAssets, relativizeFiles };
