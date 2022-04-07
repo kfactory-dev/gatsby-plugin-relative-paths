@@ -14,12 +14,6 @@ exports.onPreBootstrap = ({ store, reporter }) => {
   }
 };
 
-exports.onCreatePage = ({ page, actions, reporter }) => {
-  const matchPath = `/ipfs/:ipfs_cid${page.matchPath ?? page.path}`;
-  reporter.verbose(`[relative-paths] match ${page.path} ${matchPath}`);
-  actions.createPage({ ...page, matchPath });
-};
-
 exports.onPostBuild = async ({ reporter }) => {
   return relativizeFiles('public', assetPrefix, assetFolder, reporter);
 };
