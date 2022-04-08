@@ -19,6 +19,7 @@
   "files": [
     "index.js",
     "gatsby-node.js",
+    "gatsby-browser.js",
     "src"
   ],
   "scripts": {
