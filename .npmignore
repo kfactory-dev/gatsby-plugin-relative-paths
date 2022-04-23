@@ -1,0 +1,5 @@
+example
+node_modules
+npm-debug.*
+coverage
+junit.xml
